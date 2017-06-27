@@ -33,6 +33,7 @@
 #include "AP_Baro_MS5611.h"
 #include "AP_Baro_qflight.h"
 #include "AP_Baro_QURT.h"
+#include "AP_Baro_LPS22HB.h"
 #if HAL_WITH_UAVCAN
 #include "AP_Baro_UAVCAN.h"
 #endif
@@ -413,8 +414,10 @@ void AP_Baro::init(void)
         break;
 
     case AP_BoardConfig::PX4_BOARD_PIXRACER:
-        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
-                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_INT_NAME))));
+//        ADD_BACKEND(AP_Baro_MS56XX::probe(*this,
+//                                          std::move(hal.spi->get_device(HAL_BARO_MS5611_SPI_INT_NAME))));
+    	ADD_BACKEND(AP_Baro_LPS22HB::probe(*this,
+    										std::move(hal.spi->get_device(HAL_BARO_LPS22HB_SPI_INT_NAME))));
         break;
 
     case AP_BoardConfig::PX4_BOARD_AEROFC:

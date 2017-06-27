@@ -50,6 +50,8 @@
 #define HAL_BARO_MS5611_SPI_INT_NAME "ms5611_int"
 #define HAL_BARO_MS5611_SPI_EXT_NAME "ms5611_ext"
 
+#define HAL_BARO_LPS22HB_SPI_INT_NAME "lps22hb_int"
+
 #define HAL_INS_MPU60x0_NAME "mpu6000"
 #define HAL_INS_MPU60x0_EXT_NAME "mpu6000_ext"
 
