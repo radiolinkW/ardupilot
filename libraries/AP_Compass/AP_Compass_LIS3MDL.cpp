@@ -65,6 +65,22 @@ AP_Compass_Backend *AP_Compass_LIS3MDL::probe(Compass &compass,
     return sensor;
 }
 
+AP_Compass_Backend*AP_Compass_LIS3MDL::probe(Compass &compass,
+		AP_HAL::OwnPtr<AP_HAL::SPIDevice>dev,
+		bool force_external,
+		enum Rotation rotation)
+{
+	 if (!dev) {
+	        return nullptr;
+	    }
+	 AP_Compass_LIS3MDL *sensor = new AP_Compass_LIS3MDL(compass, std::move(dev), force_external, rotation);
+	  if (!sensor || !sensor->init()) {
+	        delete sensor;
+	        return nullptr;
+	    }
+	    return sensor;
+}
+
 AP_Compass_LIS3MDL::AP_Compass_LIS3MDL(Compass &compass,
                                        AP_HAL::OwnPtr<AP_HAL::Device> _dev,
                                        bool _force_external,
@@ -111,8 +127,6 @@ bool AP_Compass_LIS3MDL::init()
 
     /* register the compass instance in the frontend */
     compass_instance = register_compass();
-
-    printf("Found a LIS3MDL on 0x%x as compass %u\n", dev->get_bus_id(), compass_instance);
     
     set_rotation(compass_instance, rotation);
 
@@ -158,7 +172,7 @@ void AP_Compass_LIS3MDL::timer()
         goto check_registers;
     }
 
-    field(data.magx * range_scale, data.magy * range_scale, data.magz * range_scale);
+    field(data.magy * range_scale, -data.magx * range_scale, data.magz * range_scale);
 
     /* rotate raw_field from sensor frame to body frame */
     rotate_field(field, compass_instance);

@@ -52,6 +52,7 @@ namespace PX4 {
 SPIDesc SPIDeviceManager::device_table[] = {
 #if defined(PX4_SPIDEV_MPU)
     SPIDesc("mpu6000",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_MPU, SPIDEV_MODE3, 500*KHZ, 8*MHZ),
+	//	SPIDesc("mpu6500",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_MPU, SPIDEV_MODE3, 1*MHZ, 8*MHZ),
 #endif
 #if defined(PX4_SPIDEV_EXT_BARO)
     SPIDesc("ms5611_ext",   PX4_SPI_BUS_EXT, (spi_dev_e)PX4_SPIDEV_EXT_BARO, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
@@ -64,7 +65,8 @@ SPIDesc SPIDeviceManager::device_table[] = {
     SPIDesc("icm20608-am",   PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_ACCEL_MAG, SPIDEV_MODE3, 500*KHZ, 8*MHZ),
 #endif
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_PX4_V4
-    SPIDesc("ms5611_int",   PX4_SPI_BUS_BARO, (spi_dev_e)PX4_SPIDEV_BARO, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
+    //SPIDesc("ms5611_int",   PX4_SPI_BUS_BARO, (spi_dev_e)PX4_SPIDEV_BARO, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
+	SPIDesc("lps22hb_int",   PX4_SPI_BUS_BARO, (spi_dev_e)PX4_SPIDEV_BARO, SPIDEV_MODE3, 11*MHZ, 11*MHZ),
 #endif
 #ifdef PX4_SPIDEV_BARO
     SPIDesc("ms5611",       PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_BARO, SPIDEV_MODE3, 20*MHZ, 20*MHZ),
@@ -92,6 +94,7 @@ SPIDesc SPIDeviceManager::device_table[] = {
 #endif
 #ifdef PX4_SPIDEV_HMC
     SPIDesc("hmc5843",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_HMC, SPIDEV_MODE3, 11*MHZ, 11*MHZ),
+	SPIDesc("lis3mdl",      PX4_SPI_BUS_SENSORS, (spi_dev_e)PX4_SPIDEV_HMC, SPIDEV_MODE3, 11*MHZ, 11*MHZ),
 #endif
 
 #ifdef PX4_SPI_BUS_EXT

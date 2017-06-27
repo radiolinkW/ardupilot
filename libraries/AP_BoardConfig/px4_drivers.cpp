@@ -450,12 +450,15 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
 
 #define MPUREG_WHOAMI 0x75
 #define MPU_WHOAMI_MPU60X0  0x68
+#define MPU_WHOAMI_MPU6500  0x70
 #define MPU_WHOAMI_MPU9250  0x71
 #define MPU_WHOAMI_ICM20608 0xaf
 #define MPU_WHOAMI_ICM20602 0x12
 
 #define LSMREG_WHOAMI 0x0f
 #define LSM_WHOAMI_LSM303D 0x49
+#define LPS_WHOAMI_LPS22HB	0xb1
+#define LIS_WHOAMI_LIS3MDL 0x3d
 
 /*
   validation of the board type
@@ -532,8 +535,12 @@ void AP_BoardConfig::px4_autodetect(void)
     }
 #elif defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
     // only one choice
-    px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);
-    hal.console->printf("Detected Pixracer\n");
+    if(spi_check_register(HAL_INS_MPU6500_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU6500)&&
+       	spi_check_register(HAL_BARO_LPS22HB_SPI_INT_NAME, LSMREG_WHOAMI, LPS_WHOAMI_LPS22HB)
+   		&&spi_check_register(HAL_INS_LIS3MDL_NAME, LSMREG_WHOAMI,LIS_WHOAMI_LIS3MDL)){
+    		px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);
+    		hal.console->printf("Detected Pixracer\n");
+    	}
 #elif defined(CONFIG_ARCH_BOARD_AEROFC_V1)
     px4.board_type.set_and_notify(PX4_BOARD_AEROFC);
     hal.console->printf("Detected Aero FC\n");

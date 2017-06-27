@@ -71,6 +71,7 @@
 #define HAL_INS_ICM20608_EXT_NAME "icm20608_ext"
 
 #define HAL_COMPASS_HMC5843_NAME "hmc5843"
+#define HAL_INS_LIS3MDL_NAME "lis3mdl"
 
 /* px4fmu-v1 */
 #ifdef CONFIG_ARCH_BOARD_PX4FMU_V1
