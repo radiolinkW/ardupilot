@@ -139,6 +139,7 @@ private:
         Vector3f accel;
         Vector3f gyro;
         uint8_t count;
+        //TODO:set cutfre 92HZ
         LowPassFilterVector3f accel_filter{4000, 188};
         LowPassFilterVector3f gyro_filter{8000, 188};
     } _accum;
