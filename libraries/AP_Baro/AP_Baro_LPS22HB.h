@@ -5,6 +5,8 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Semaphores.h>
 #include <AP_HAL/Device.h>
+#include <Filter/Filter.h>
+#include <Filter/LowPassFilter2p.h>
 
 class AP_Baro_LPS22HB : public AP_Baro_Backend
 {
@@ -14,7 +16,6 @@ public:
     static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
 
 private:
-
     AP_Baro_LPS22HB(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
     virtual ~AP_Baro_LPS22HB(void) {};
 
@@ -38,4 +39,5 @@ private:
     float _pressure;
     float _temperature;
     bool _has_sample;
+    LowPassFilter2pFloat barofilter{75,10};
 };

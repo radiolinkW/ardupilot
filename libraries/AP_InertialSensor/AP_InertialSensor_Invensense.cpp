@@ -569,9 +569,9 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         fsync_set = (int16_val(data, 2) & 1U) != 0;
 #endif
         
-        accel = Vector3f(int16_val(data, 1),
+        accel = accel2_filter.apply(Vector3f(int16_val(data, 1),
                          int16_val(data, 0),
-                         -int16_val(data, 2));
+                         -int16_val(data, 2)));
         accel *= _accel_scale;
 
         int16_t t2 = int16_val(data, 3);
@@ -582,9 +582,9 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         }
         float temp = t2 * temp_sensitivity + temp_zero;
         
-        gyro = Vector3f(int16_val(data, 5),
+        gyro = gyro2_filter.apply(Vector3f(int16_val(data, 5),
                         int16_val(data, 4),
-                        -int16_val(data, 6));
+                        -int16_val(data, 6)));
         gyro *= GYRO_SCALE;
 
         _rotate_and_correct_accel(_accel_instance, accel);

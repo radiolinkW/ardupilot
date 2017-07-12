@@ -141,11 +141,9 @@ bool AP_Baro_LPS22HB::_init()
 
     _dev->setup_checked_registers(3);
 
-    _register_write(ADDR_CTRL_REG1,CTRL_REG1_ODR_75HZ|CTRL_REG1_BDU|CTRL_REG1_EN_LPFP|CTRL_REG1_LPFP_CFG);   //|CTRL_REG1_BDU|CTRL_REG1_EN_LPFP|CTRL_REG1_LPFP_CFG
+    _register_write(ADDR_CTRL_REG1,CTRL_REG1_ODR_75HZ|CTRL_REG1_BDU|CTRL_REG1_EN_LPFP|CTRL_REG1_LPFP_CFG);
+  //  _register_write(ADDR_CTRL_REG1,CTRL_REG1_ODR_75HZ|CTRL_REG1_BDU);
     _register_write(ADDR_CTRL_REG2,0x18);
-
- //     _register_write(ADDR_CTRL_REG1,CTRL_REG1_EN_LPFP|CTRL_REG1_LPFP_CFG|CTRL_REG1_BDU);
-//      _register_write(ADDR_CTRL_REG2,0x18);
 
     _instance = _frontend.register_sensor();
 #if 0
@@ -188,7 +186,7 @@ void AP_Baro_LPS22HB::_timer(void)
 {
 	struct PACKED {
         uint8_t press_xl;
-        uint8_t	press_l;
+        uint8_t press_l;
         uint8_t press_h;
         uint8_t temp_l;
         uint8_t temp_h;
@@ -225,7 +223,8 @@ void AP_Baro_LPS22HB::_timer(void)
 
     if (_sem->take(0)) {
             _temperature = ((float)t_raw) / 100;
-            _pressure =    ((float)raw) / 4096;
+            _pressure =    barofilter.apply(((float)raw) / 4096);
+     //       _pressure =    ((float)raw) / 4096;
             _has_sample = true;
             _sem->give();
 

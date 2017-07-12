@@ -131,6 +131,9 @@ private:
     // buffer for fifo read
     uint8_t *_fifo_buffer;
 
+    LowPassFilter2p<Vector3f> accel2_filter{1000, 75};
+    LowPassFilter2p<Vector3f> gyro2_filter{1000, 75};
+
     /*
       accumulators for fast sampling
       See description in _accumulate_fast_sampling()
@@ -139,9 +142,8 @@ private:
         Vector3f accel;
         Vector3f gyro;
         uint8_t count;
-        //TODO:set cutfre 92HZ
-        LowPassFilterVector3f accel_filter{4000, 188};
-        LowPassFilterVector3f gyro_filter{8000, 188};
+        LowPassFilter2p<Vector3f> accel_filter{4000, 90};
+        LowPassFilter2p<Vector3f> gyro_filter{8000, 90};
     } _accum;
 };
 
