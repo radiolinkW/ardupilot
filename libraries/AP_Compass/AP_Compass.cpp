@@ -528,18 +528,15 @@ void Compass::_detect_backends(void)
         // external i2c bus
         ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_HMC5843_I2C_ADDR),
                                                true, ROTATION_ROLL_180),
-                     AP_Compass_HMC5843::name, true);
+                    AP_Compass_HMC5843::name, true);
         // internal i2c bus
         ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_HMC5843_I2C_ADDR),
                                               both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_YAW_270),
                     AP_Compass_HMC5843::name, both_i2c_external);
         //external i2c bus
         ADD_BACKEND(AP_Compass_QMC5883L::probe(*this, hal.i2c_mgr->get_device(1, HAL_COMPASS_QMC5883L_I2C_ADDR),
-        								true,ROTATION_ROLL_180), AP_Compass_QMC5883L::name, true);
-        //internal i2c bus
-        ADD_BACKEND(AP_Compass_QMC5883L::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_QMC5883L_I2C_ADDR),
-        								both_i2c_external, both_i2c_external?ROTATION_ROLL_180:ROTATION_YAW_270),
-        								AP_Compass_QMC5883L::name,both_i2c_external);
+       								true,ROTATION_ROLL_180), AP_Compass_QMC5883L::name, true);
+
 #if !HAL_MINIMIZE_FEATURES
 #if 0
         // lis3mdl - this is disabled for now due to an errata on pixhawk2 GPS unit, pending investigation
@@ -559,6 +556,7 @@ void Compass::_detect_backends(void)
                                               both_i2c_external, both_i2c_external?ROTATION_YAW_270:ROTATION_NONE),
                      AP_Compass_AK09916::name, both_i2c_external);
 #endif // HAL_MINIMIZE_FEATURES
+
         }
         break;
 
@@ -590,14 +588,10 @@ void Compass::_detect_backends(void)
         break;
 
     case AP_BoardConfig::PX4_BOARD_PIXRACER:
-//        ADD_BACKEND(AP_Compass_HMC5843::probe(*this, hal.spi->get_device(HAL_COMPASS_HMC5843_NAME),
-//                                               false, ROTATION_PITCH_180),
-//                     AP_Compass_HMC5843::name, false);
-//        ADD_BACKEND(AP_Compass_AK8963::probe_mpu9250(*this, 0, ROTATION_ROLL_180_YAW_90),
-//                     AP_Compass_AK8963::name, false);
-    	ADD_BACKEND(AP_Compass_LIS3MDL::probe(*this, hal.spi->get_device(HAL_INS_LIS3MDL_NAME),
-    									false,   ROTATION_YAW_180 ),
-    					AP_Compass_LIS3MDL::name, false);
+    	        ADD_BACKEND(AP_Compass_QMC5883L::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_QMC5883L_I2C_ADDR),
+    	        								false, ROTATION_ROLL_180),
+    	        								AP_Compass_QMC5883L::name,false);
+
         break;
 
     case AP_BoardConfig::PX4_BOARD_PHMINI:

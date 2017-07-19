@@ -458,7 +458,7 @@ bool AP_BoardConfig::spi_check_register(const char *devname, uint8_t regnum, uin
 #define LSMREG_WHOAMI 0x0f
 #define LSM_WHOAMI_LSM303D 0x49
 #define LPS_WHOAMI_LPS22HB	0xb1
-#define LIS_WHOAMI_LIS3MDL 0x3d
+//#define LIS_WHOAMI_LIS3MDL 0x3d
 
 /*
   validation of the board type
@@ -537,7 +537,8 @@ void AP_BoardConfig::px4_autodetect(void)
     // only one choice
     if(spi_check_register(HAL_INS_MPU6500_NAME, MPUREG_WHOAMI, MPU_WHOAMI_MPU6500)&&
        	spi_check_register(HAL_BARO_LPS22HB_SPI_INT_NAME, LSMREG_WHOAMI, LPS_WHOAMI_LPS22HB)
-   		&&spi_check_register(HAL_INS_LIS3MDL_NAME, LSMREG_WHOAMI,LIS_WHOAMI_LIS3MDL)){
+  // 		&&spi_check_register(HAL_INS_LIS3MDL_NAME, LSMREG_WHOAMI,LIS_WHOAMI_LIS3MDL)
+		){
     		px4.board_type.set_and_notify(PX4_BOARD_PIXRACER);
     		hal.console->printf("Detected Pixracer\n");
     	}
