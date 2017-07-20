@@ -117,6 +117,8 @@ bool AP_Compass_QMC5883L::init()
 
     _dev->get_semaphore()->give();
 
+    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+
     _instance = register_compass();
 
     printf("%s found on bus %u id %u address 0x%02x\n", name,
@@ -166,6 +168,11 @@ void AP_Compass_QMC5883L::timer()
   }
 
     uint32_t now = AP_HAL::micros();
+/*
+    auto x = -static_cast<int16_t>(le16toh(buffer.rx));
+    auto y = static_cast<int16_t>(le16toh(buffer.ry));
+    auto z = -static_cast<int16_t>(le16toh(buffer.rz));
+*/
 
     auto x = -static_cast<int16_t>(le16toh(buffer.rx));
     auto y = static_cast<int16_t>(le16toh(buffer.ry));
@@ -180,7 +187,7 @@ void AP_Compass_QMC5883L::timer()
     Vector3f field = Vector3f{x * range_scale , y * range_scale, z * range_scale };
 
     // rotate to the desired orientation
-    if (is_external(_instance)) {
+    if (_force_external) {
         field.rotate(ROTATION_YAW_90);
     }
     else{

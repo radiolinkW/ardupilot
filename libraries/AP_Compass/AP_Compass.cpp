@@ -591,7 +591,6 @@ void Compass::_detect_backends(void)
     	        ADD_BACKEND(AP_Compass_QMC5883L::probe(*this, hal.i2c_mgr->get_device(0, HAL_COMPASS_QMC5883L_I2C_ADDR),
     	        								false, ROTATION_ROLL_180),
     	        								AP_Compass_QMC5883L::name,false);
-
         break;
 
     case AP_BoardConfig::PX4_BOARD_PHMINI:
