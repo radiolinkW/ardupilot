@@ -168,11 +168,6 @@ void AP_Compass_QMC5883L::timer()
   }
 
     uint32_t now = AP_HAL::micros();
-/*
-    auto x = -static_cast<int16_t>(le16toh(buffer.rx));
-    auto y = static_cast<int16_t>(le16toh(buffer.ry));
-    auto z = -static_cast<int16_t>(le16toh(buffer.rz));
-*/
 
     auto x = -static_cast<int16_t>(le16toh(buffer.rx));
     auto y = static_cast<int16_t>(le16toh(buffer.ry));
