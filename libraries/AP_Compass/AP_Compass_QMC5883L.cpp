@@ -64,7 +64,6 @@ AP_Compass_Backend *AP_Compass_QMC5883L::probe(Compass &compass,
     if (!dev) {
         return nullptr;
     }
-
     AP_Compass_QMC5883L *sensor = new AP_Compass_QMC5883L(compass, std::move(dev),force_external,rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
@@ -117,6 +116,8 @@ bool AP_Compass_QMC5883L::init()
     _dev->set_retries(3);
 
     _dev->get_semaphore()->give();
+
+    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
     _instance = register_compass();
 
@@ -181,8 +182,11 @@ void AP_Compass_QMC5883L::timer()
     Vector3f field = Vector3f{x * range_scale , y * range_scale, z * range_scale };
 
     // rotate to the desired orientation
-    if (is_external(_instance)) {
+    if (_force_external) {
         field.rotate(ROTATION_YAW_90);
+    }
+    else{
+    	 field.rotate(ROTATION_YAW_270);
     }
 
     /* rotate raw_field from sensor frame to body frame */

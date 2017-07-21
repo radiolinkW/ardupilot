@@ -27,7 +27,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define TOSHIBA_LED_I2C_ADDR 0x55    // default I2C bus address
-#define TOSHIBA_LED_I2C_BUS_INTERNAL    0
+#define TOSHIBA_LED_I2C_BUS_INTERNAL    1
 #define TOSHIBA_LED_I2C_BUS_EXTERNAL    1
 
 #define TOSHIBA_LED_PWM0    0x01    // pwm0 register
