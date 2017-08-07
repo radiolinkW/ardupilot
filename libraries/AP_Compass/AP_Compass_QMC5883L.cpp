@@ -90,11 +90,12 @@ bool AP_Compass_QMC5883L::init()
         return false;
     }
     //must reset first
-    _dev->write_register(QMC5883L_REG_CONF2,QMC5883L_RST);
+//    _dev->write_register(QMC5883L_REG_CONF2,QMC5883L_RST);
 
     _dev->set_retries(10);
 
     uint8_t whoami;
+    _dev->read_registers(0x00,&whoami,1);
     if (!_dev->read_registers(QMC5883L_REG_ID, &whoami,1)||
     		whoami != QMC5883_ID_VAL){
         // not an QMC5883L
@@ -116,8 +117,6 @@ bool AP_Compass_QMC5883L::init()
     _dev->set_retries(3);
 
     _dev->get_semaphore()->give();
-
-    _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
 
     _instance = register_compass();
 

@@ -53,6 +53,7 @@ Compass::_start_calibration(uint8_t i, bool retry, float delay)
     if (!is_calibrating()) {
         AP_Notify::events.initiated_compass_cal = 1;
     }
+    printf("primary:%d",get_primary() );
     if (i == get_primary() && _state[i].external != 0) {
         _calibrator[i].set_tolerance(_calibration_threshold);
     } else {
