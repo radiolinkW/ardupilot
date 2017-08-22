@@ -47,6 +47,17 @@ void DigitalBiquadFilter<T>::compute_params(float sample_freq, float cutoff_freq
     ret.a2 = (1.0f-2.0f*cosf(M_PI/4.0f)*ohm+ohm*ohm)/c;
 }
 
+template <class T>
+void DigitalBiquadFilter<T>::set_params(float cutoff_freq,float sample_freq,float a1, float a2, float b0,float b1,float b2, biquad_params &out) {
+	out.cutoff_freq = cutoff_freq;
+	out.sample_freq = sample_freq;
+	out.a1 = a1;
+	out.a2 = a2;
+	out.b0 = b0;
+	out.b1 = b1;
+	out.b2 = b2;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 // LowPassFilter2p
@@ -90,6 +101,13 @@ template <class T>
 void LowPassFilter2p<T>::reset(void) {
     return _filter.reset();
 }
+
+// change parameters
+template <class T>
+void LowPassFilter2p<T>::set_params(float cutoff_freq,float sample_freq,float a1, float a2, float b0,float b1,float b2) {
+    return _filter.set_params(cutoff_freq,sample_freq,a1, a2, b0,b1,b2,_params);
+}
+
 
 /* 
  * Make an instances

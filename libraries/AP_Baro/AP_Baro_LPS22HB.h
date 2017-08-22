@@ -39,5 +39,5 @@ private:
     float _pressure;
     float _temperature;
     bool _has_sample;
-    LowPassFilter2pFloat barofilter{75,10};
+    LowPassFilter2pFloat barofilter{75,1};
 };

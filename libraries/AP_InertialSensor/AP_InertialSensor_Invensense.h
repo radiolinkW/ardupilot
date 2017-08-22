@@ -63,7 +63,17 @@ public:
         Invensense_ICM20608,
         Invensense_ICM20602,
     };
-    
+
+    struct biquad_params {
+            float cutoff_freq;
+            float sample_freq;
+            float a1;
+            float a2;
+            float b0;
+            float b1;
+            float b2;
+        };
+
 private:
     AP_InertialSensor_Invensense(AP_InertialSensor &imu,
                               AP_HAL::OwnPtr<AP_HAL::Device> dev,
@@ -131,8 +141,78 @@ private:
     // buffer for fifo read
     uint8_t *_fifo_buffer;
 
-    LowPassFilter2p<Vector3f> accel2_filter{1000, 75};
-    LowPassFilter2p<Vector3f> gyro2_filter{1000, 75};
+    void set_filter_param(biquad_params &in,LowPassFilter2p<Vector3f> &filter){
+    			filter.set_params(in.cutoff_freq,in.sample_freq,in.a1,in.a2,in.b0,in.b1,in.b2);
+    };
+
+    LowPassFilter2p<Vector3f> accel1_filter;
+    LowPassFilter2p<Vector3f> gyro1_filter;
+
+    LowPassFilter2p<Vector3f> accel2_filter;
+    LowPassFilter2p<Vector3f> gyro2_filter;
+
+    LowPassFilter2p<Vector3f> accel3_filter;
+    LowPassFilter2p<Vector3f> gyro3_filter;
+
+    biquad_params accfilter1{
+    											20,
+												1000,
+												-1.778313488139435130,
+												0.792447471832947059,
+												0.003533495923377968,
+												0.007066991846755937,
+												0.003533495923377968,
+    };
+
+    biquad_params accfilter2{
+    											20,
+												1000,
+												-1.893415601022500280,
+												0.908464412949295252,
+												0.003762202981698729,
+												0.007524405963397458,
+												0.003762202981698729
+    };
+
+    biquad_params accfilter3{
+    											20,
+												1000,
+												-0.416099347402456965,
+												0.346525773587651298,
+												0.673262886793825621,
+												-0.416099347402456965,
+												0.673262886793825621,
+    };
+
+    biquad_params gyrofilter1{
+    											20,
+												1000,
+												-1.348967745252794610,
+												0.513981894219675661,
+												0.041253537241720303,
+												0.082507074483440607,
+												0.041253537241720303
+    };
+
+    biquad_params gyrofilter2{
+    										20,
+											1000,
+											 -0.450032165212816915,
+											0.456334678690091755,
+											0.728167339345045850,
+											-0.450032165212816915,
+											0.728167339345045850,
+    };
+
+    biquad_params gyrofilter3{
+    										20,
+											1000,
+											0.444541311165152497,
+											0.438565901737320185,
+											0.719282950868660120,
+											0.444541311165152497,
+											0.719282950868660120,
+    };
 
     /*
       accumulators for fast sampling

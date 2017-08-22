@@ -25,7 +25,7 @@
 template <class T>
 class DigitalBiquadFilter {
 public:
-    struct biquad_params {
+struct biquad_params {
         float cutoff_freq;
         float sample_freq;
         float a1;
@@ -40,6 +40,7 @@ public:
     T apply(const T &sample, const struct biquad_params &params);
     void reset();
     static void compute_params(float sample_freq, float cutoff_freq, biquad_params &ret);
+    static void set_params(float cutoff_freq,float sample_freq,float a1, float a2, float b0,float b1,float b2, biquad_params &out);
     
 private:
     T _delay_element_1;
@@ -59,6 +60,7 @@ public:
     float get_sample_freq(void) const;
     T apply(const T &sample);
     void reset(void);
+    void set_params(float cutoff_freq,float sample_freq,float a1, float a2, float b0,float b1,float b2);
 
 protected:
     struct DigitalBiquadFilter<T>::biquad_params _params;

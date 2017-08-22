@@ -281,6 +281,7 @@ AP_InertialSensor_Invensense::AP_InertialSensor_Invensense(AP_InertialSensor &im
     , _rotation(rotation)
     , _dev(std::move(dev))
 {
+
 }
 
 AP_InertialSensor_Invensense::~AP_InertialSensor_Invensense()
@@ -348,6 +349,12 @@ bool AP_InertialSensor_Invensense::_init()
     _drdy_pin->mode(HAL_GPIO_INPUT);
 #endif
 
+    set_filter_param(accfilter1,accel1_filter);
+    set_filter_param(gyrofilter1,gyro1_filter);
+    set_filter_param(accfilter2,accel2_filter);
+    set_filter_param(gyrofilter2,gyro2_filter);
+    set_filter_param(accfilter3,accel3_filter);
+    set_filter_param(gyrofilter3,gyro3_filter);
     bool success = _hardware_init();
 
     return success;
@@ -569,9 +576,11 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         fsync_set = (int16_val(data, 2) & 1U) != 0;
 #endif
         
-        accel = accel2_filter.apply(Vector3f(int16_val(data, 1),
+        accel = accel1_filter.apply(Vector3f(int16_val(data, 1),
                          int16_val(data, 0),
                          -int16_val(data, 2)));
+        accel = accel2_filter.apply(accel);
+        accel = accel3_filter.apply(accel);
         accel *= _accel_scale;
 
         int16_t t2 = int16_val(data, 3);
@@ -582,9 +591,11 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
         }
         float temp = t2 * temp_sensitivity + temp_zero;
         
-        gyro = gyro2_filter.apply(Vector3f(int16_val(data, 5),
+        gyro = gyro1_filter.apply(Vector3f(int16_val(data, 5),
                         int16_val(data, 4),
                         -int16_val(data, 6)));
+        gyro = gyro2_filter.apply(gyro);
+        gyro = gyro3_filter.apply(gyro);
         gyro *= GYRO_SCALE;
 
         _rotate_and_correct_accel(_accel_instance, accel);
