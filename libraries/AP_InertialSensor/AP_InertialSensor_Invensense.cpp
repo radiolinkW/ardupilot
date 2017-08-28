@@ -355,6 +355,7 @@ bool AP_InertialSensor_Invensense::_init()
     set_filter_param(gyrofilter2,gyro2_filter);
     set_filter_param(accfilter3,accel3_filter);
     set_filter_param(gyrofilter3,gyro3_filter);
+    set_filter_param(gyrofilter4,gyro4_filter);
     bool success = _hardware_init();
 
     return success;
@@ -596,6 +597,7 @@ bool AP_InertialSensor_Invensense::_accumulate(uint8_t *samples, uint8_t n_sampl
                         -int16_val(data, 6)));
         gyro = gyro2_filter.apply(gyro);
         gyro = gyro3_filter.apply(gyro);
+        gyro = gyro4_filter.apply(gyro);
         gyro *= GYRO_SCALE;
 
         _rotate_and_correct_accel(_accel_instance, accel);
