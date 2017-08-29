@@ -148,18 +148,14 @@ bool AP_Arming::logging_checks(bool report)
 {
     if ((checks_to_perform & ARMING_CHECK_ALL) ||
         (checks_to_perform & ARMING_CHECK_LOGGING)) {
-        if (DataFlash_Class::instance()->logging_failed()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Logging failed");
-            }
-            return false;
-        }
-        if (!DataFlash_Class::instance()->CardInserted()) {
-            if (report) {
-                GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: No SD card");
-            }
-            return false;
-        }
+    	if(DataFlash_Class::instance()->CardInserted()){
+    		if (DataFlash_Class::instance()->logging_failed()) {
+    			if (report) {
+    				GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "PreArm: Logging failed");
+    			}
+    			return false;
+        	}
+    	}
     }
     return true;
 }

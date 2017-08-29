@@ -185,7 +185,7 @@ bool DataFlash_File::log_exists(const uint16_t lognum) const
 
 void DataFlash_File::periodic_1Hz(const uint32_t now)
 {
-    if (!io_thread_alive()) {
+    if (!io_thread_alive()&&CardInserted()) {
         if (io_thread_warning_decimation_counter == 0) {
             GCS_MAVLINK::send_statustext_all(MAV_SEVERITY_CRITICAL, "No IO Thread Heartbeat");
         }

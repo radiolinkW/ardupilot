@@ -184,6 +184,8 @@ private:
     // Dataflash
     DataFlash_Class DataFlash;
 
+    bool havesdcard = 1;
+
     AP_GPS gps;
 
     // flight modes convenience array

@@ -938,13 +938,20 @@ void Copter::log_init(void)
     DataFlash.Init(log_structure, ARRAY_SIZE(log_structure));
     if (!DataFlash.CardInserted()) {
         gcs_send_text(MAV_SEVERITY_WARNING, "No dataflash card inserted");
-    } else if (DataFlash.NeedPrep()) {
-        gcs_send_text(MAV_SEVERITY_INFO, "Preparing log system");
-        DataFlash.Prep();
-        gcs_send_text(MAV_SEVERITY_INFO, "Prepared log system");
-        for (uint8_t i=0; i<num_gcs; i++) {
-            gcs_chan[i].reset_cli_timeout();
-        }
+        g.log_bitmask.set_and_save(0);
+        DataFlash.StopLogging();
+        havesdcard = 0;
+    } else{
+    	if(g.log_bitmask == 0)
+    		g.log_bitmask.set_and_save(DEFAULT_LOG_BITMASK);
+    	if (DataFlash.NeedPrep()) {
+    		gcs_send_text(MAV_SEVERITY_INFO, "Preparing log system");
+    		DataFlash.Prep();
+    		gcs_send_text(MAV_SEVERITY_INFO, "Prepared log system");
+    		for (uint8_t i=0; i<num_gcs; i++) {
+    			gcs_chan[i].reset_cli_timeout();
+        	}
+    	}
     }
 }
 
