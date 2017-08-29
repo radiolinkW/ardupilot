@@ -183,6 +183,8 @@ private:
 
     DataFlash_Class DataFlash;
 
+    bool havesdcard = 1;
+
     // has a log download started?
     bool in_log_download;
 
