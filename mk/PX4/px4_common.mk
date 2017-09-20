@@ -26,7 +26,7 @@ MODULES		+= drivers/px4fmu
 #
 # System commands
 #
-MODULES		+= systemcmds/bl_update
+#MODULES		+= systemcmds/bl_update
 MODULES		+= systemcmds/mixer
 MODULES		+= systemcmds/perf
 MODULES		+= systemcmds/reboot
