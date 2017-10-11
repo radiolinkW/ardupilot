@@ -191,11 +191,13 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         // save previous delta angle for coning correction
         _imu._last_delta_angle[instance] = delta_angle;
         _imu._last_raw_gyro[instance] = gyro;
-
+        _imu._gyro_filtered[instance] =  gyro;
+/*
         _imu._gyro_filtered[instance] = _imu._gyro_filter[instance].apply(gyro);
         if (_imu._gyro_filtered[instance].is_nan() || _imu._gyro_filtered[instance].is_inf()) {
             _imu._gyro_filter[instance].reset();
         }
+        */
         _imu._new_gyro_data[instance] = true;
         _sem->give();
     }
