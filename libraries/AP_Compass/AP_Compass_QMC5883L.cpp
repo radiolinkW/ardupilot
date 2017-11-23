@@ -15,6 +15,7 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Driver by RadioLink LjWang, Jun 2017
+ * GPS compass module See<http://www.radiolink.com>
  */
 #include "AP_Compass_QMC5883L.h"
 
@@ -64,6 +65,7 @@ AP_Compass_Backend *AP_Compass_QMC5883L::probe(Compass &compass,
     if (!dev) {
         return nullptr;
     }
+
     AP_Compass_QMC5883L *sensor = new AP_Compass_QMC5883L(compass, std::move(dev),force_external,rotation);
     if (!sensor || !sensor->init()) {
         delete sensor;
@@ -90,7 +92,6 @@ bool AP_Compass_QMC5883L::init()
         return false;
     }
     //must reset first
-//    _dev->write_register(QMC5883L_REG_CONF2,QMC5883L_RST);
 
     _dev->set_retries(10);
 
@@ -187,7 +188,6 @@ void AP_Compass_QMC5883L::timer()
     else{
     	 field.rotate(ROTATION_YAW_270);
     }
-
     /* rotate raw_field from sensor frame to body frame */
     rotate_field(field, _instance);
 
