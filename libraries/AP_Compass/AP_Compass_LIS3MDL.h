@@ -38,10 +38,6 @@ public:
                                      bool force_external = false,
                                      enum Rotation rotation = ROTATION_NONE);
 
-    static AP_Compass_Backend *probe(Compass &compass,
-                                     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev,
-                                     bool force_external = false,
-                                     enum Rotation rotation = ROTATION_NONE);
 
     void read() override;
 
