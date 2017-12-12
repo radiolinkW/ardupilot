@@ -224,7 +224,7 @@ void AP_Baro_LPS22HB::_timer(void)
     if (_sem->take(0)) {
             _temperature = ((float)t_raw) / 100;
        //     _pressure =    barofilter.apply(((float)raw) / 4096);
-            _pressure =    ((float)raw) / 4096;
+            _pressure =    ((float)raw) / 4096*100;
             _has_sample = true;
             _sem->give();
 
