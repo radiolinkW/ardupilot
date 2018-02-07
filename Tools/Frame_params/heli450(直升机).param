@@ -1,4 +1,4 @@
-#NOTE:此参数适配450直机50A电调3700KV电机银燕es09md舵机es9257锁尾 
+#NOTE:For 450 helicopter 50AESC 3700KV motor Servo es09md Servo es9257
 ACCEL_Z_D,0
 ACCEL_Z_FF,0
 ACCEL_Z_FILT,20
