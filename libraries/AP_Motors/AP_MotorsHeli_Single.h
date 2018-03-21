@@ -10,7 +10,7 @@
 
 // rsc and aux function output channels
 #define AP_MOTORS_HELI_SINGLE_RSC                              CH_6
-#define AP_MOTORS_HELI_SINGLE_AUX                              CH_7
+#define AP_MOTORS_HELI_SINGLE_AUX                              CH_5
 
 // servo position defaults
 #define AP_MOTORS_HELI_SINGLE_SERVO1_POS                       -60
