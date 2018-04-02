@@ -33,8 +33,10 @@ void Plane::init_ardupilot()
     //
     load_parameters();
 
+#if STATS_ENABLED == ENABLED
     // initialise stats module
     g2.stats.init();
+#endif
 
 #if HIL_SUPPORT
     if (g.hil_mode == 1) {
@@ -115,8 +117,7 @@ void Plane::init_ardupilot()
 #if FRSKY_TELEM_ENABLED == ENABLED
     // setup frsky, and pass a number of parameters to the library
     frsky_telemetry.init(serial_manager, fwver.fw_string,
-                         MAV_TYPE_FIXED_WING,
-                         &g.fs_batt_voltage, &g.fs_batt_mah);
+                         MAV_TYPE_FIXED_WING);
 #endif
 
 #if LOGGING_ENABLED == ENABLED
@@ -201,6 +202,11 @@ void Plane::init_ardupilot()
     }
 #endif
 
+// init cargo gripper
+#if GRIPPER_ENABLED == ENABLED
+    g2.gripper.init();
+#endif
+
     // disable safety if requested
     BoardConfig.init_safety();
 }
@@ -270,7 +276,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     auto_state.inverted_flight = false;
 
     // don't cross-track when starting a mission
-    auto_state.next_wp_no_crosstrack = true;
+    auto_state.next_wp_crosstrack = false;
 
     // reset landing check
     auto_state.checked_for_autoland = false;
@@ -295,7 +301,10 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 #if FRSKY_TELEM_ENABLED == ENABLED
     frsky_telemetry.update_control_mode(control_mode);
 #endif
-    
+#if CAMERA == ENABLED
+    camera.set_is_auto_mode(control_mode == AUTO);
+#endif
+
     if (previous_mode == AUTOTUNE && control_mode != AUTOTUNE) {
         // restore last gains
         autotune_restore();
@@ -324,6 +333,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     switch(control_mode)
     {
     case INITIALISING:
+        throttle_allows_nudging = true;
         auto_throttle_mode = true;
         auto_navigation_mode = false;
         break;
@@ -332,17 +342,20 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     case STABILIZE:
     case TRAINING:
     case FLY_BY_WIRE_A:
+        throttle_allows_nudging = false;
         auto_throttle_mode = false;
         auto_navigation_mode = false;
         break;
 
     case AUTOTUNE:
+        throttle_allows_nudging = false;
         auto_throttle_mode = false;
         auto_navigation_mode = false;
         autotune_start();
         break;
 
     case ACRO:
+        throttle_allows_nudging = false;
         auto_throttle_mode = false;
         auto_navigation_mode = false;
         acro_state.locked_roll = false;
@@ -350,6 +363,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         break;
         
     case CRUISE:
+        throttle_allows_nudging = false;
         auto_throttle_mode = true;
         auto_navigation_mode = false;
         cruise_state.locked_heading = false;
@@ -362,6 +376,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         break;
 
     case FLY_BY_WIRE_B:
+        throttle_allows_nudging = false;
         auto_throttle_mode = true;
         auto_navigation_mode = false;
         
@@ -373,12 +388,14 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 
     case CIRCLE:
         // the altitude to circle at is taken from the current altitude
+        throttle_allows_nudging = false;
         auto_throttle_mode = true;
         auto_navigation_mode = true;
         next_WP_loc.alt = current_loc.alt;
         break;
 
     case AUTO:
+        throttle_allows_nudging = true;
         auto_throttle_mode = true;
         auto_navigation_mode = true;
         if (quadplane.available() && quadplane.enable == 2) {
@@ -394,6 +411,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         break;
 
     case RTL:
+        throttle_allows_nudging = true;
         auto_throttle_mode = true;
         auto_navigation_mode = true;
         prev_WP_loc = current_loc;
@@ -401,6 +419,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
         break;
 
     case LOITER:
+        throttle_allows_nudging = true;
         auto_throttle_mode = true;
         auto_navigation_mode = true;
         do_loiter_at_location();
@@ -415,6 +434,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
 
     case AVOID_ADSB:
     case GUIDED:
+        throttle_allows_nudging = true;
         auto_throttle_mode = true;
         auto_navigation_mode = true;
         guided_throttle_passthru = false;
@@ -431,6 +451,7 @@ void Plane::set_mode(enum FlightMode mode, mode_reason_t reason)
     case QLOITER:
     case QLAND:
     case QRTL:
+        throttle_allows_nudging = true;
         auto_navigation_mode = false;
         if (!quadplane.init_mode()) {
             control_mode = previous_mode;
@@ -485,26 +506,26 @@ void Plane::check_long_failsafe()
             radio_timeout_ms = failsafe.short_timer_ms;
         }
         if (failsafe.rc_failsafe &&
-            (tnow - radio_timeout_ms) > g.long_fs_timeout*1000) {
+            (tnow - radio_timeout_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_LONG, MODE_REASON_RADIO_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_AUTO && control_mode == AUTO &&
                    failsafe.last_heartbeat_ms != 0 &&
-                   (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
+                   (tnow - failsafe.last_heartbeat_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HEARTBEAT &&
                    failsafe.last_heartbeat_ms != 0 &&
-                   (tnow - failsafe.last_heartbeat_ms) > g.long_fs_timeout*1000) {
+                   (tnow - failsafe.last_heartbeat_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
         } else if (g.gcs_heartbeat_fs_enabled == GCS_FAILSAFE_HB_RSSI && 
                    gcs().chan(0).last_radio_status_remrssi_ms != 0 &&
-                   (tnow - gcs().chan(0).last_radio_status_remrssi_ms) > g.long_fs_timeout*1000) {
+                   (tnow - gcs().chan(0).last_radio_status_remrssi_ms) > g.fs_timeout_long*1000) {
             failsafe_long_on_event(FAILSAFE_GCS, MODE_REASON_GCS_FAILSAFE);
         }
     } else {
-        uint32_t timeout_seconds = g.long_fs_timeout;
-        if (g.short_fs_action != SHORT_FS_ACTION_DISABLED) {
+        uint32_t timeout_seconds = g.fs_timeout_long;
+        if (g.fs_action_short != FS_ACTION_SHORT_DISABLED) {
             // avoid dropping back into short timeout
-            timeout_seconds = g.short_fs_timeout;
+            timeout_seconds = g.fs_timeout_short;
         }
         // We do not change state but allow for user to change mode
         if (failsafe.state == FAILSAFE_GCS && 
@@ -521,7 +542,7 @@ void Plane::check_short_failsafe()
 {
     // only act on changes
     // -------------------
-    if (g.short_fs_action != SHORT_FS_ACTION_DISABLED &&
+    if (g.fs_action_short != FS_ACTION_SHORT_DISABLED &&
        failsafe.state == FAILSAFE_NONE &&
        flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
         // The condition is checked and the flag rc_failsafe is set in radio.cpp
@@ -531,7 +552,7 @@ void Plane::check_short_failsafe()
     }
 
     if(failsafe.state == FAILSAFE_SHORT) {
-        if(!failsafe.rc_failsafe || g.short_fs_action == SHORT_FS_ACTION_DISABLED) {
+        if(!failsafe.rc_failsafe || g.fs_action_short == FS_ACTION_SHORT_DISABLED) {
             failsafe_short_off_event(MODE_REASON_RADIO_FAILSAFE);
         }
     }
@@ -583,17 +604,6 @@ void Plane::update_notify()
 {
     notify.update();
 }
-
-void Plane::resetPerfData(void) 
-{
-    perf.mainLoop_count = 0;
-    perf.G_Dt_max       = 0;
-    perf.G_Dt_min       = 0;
-    perf.num_long       = 0;
-    perf.start_ms       = millis();
-    perf.last_log_dropped = DataFlash.num_dropped();
-}
-
 
 // sets notify object flight mode information
 void Plane::notify_flight_mode(enum FlightMode mode)

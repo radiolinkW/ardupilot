@@ -79,6 +79,9 @@ char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 
 #define ARRAY_SIZE(_arr) sizeof(_ARRAY_SIZE_HELPER(_arr))
 
+// simpler ARRAY_SIZE which can handle zero elements
+#define ARRAY_SIZE_SIMPLE(_arr) (sizeof(_arr)/sizeof(_arr[0]))
+
 /*
  * See UNUSED_RESULT. The difference is that it receives @uniq_ as the name to
  * be used for its internal variable.
@@ -119,7 +122,7 @@ char (&_ARRAY_SIZE_HELPER(T (&_arr)[0]))[0];
 //@{
 
 struct PACKED Location_Option_Flags {
-    uint8_t relative_alt : 1;           // 1 if altitude is relateive to home
+    uint8_t relative_alt : 1;           // 1 if altitude is relative to home
     uint8_t unused1      : 1;           // unused flag (defined so that loiter_ccw uses the correct bit)
     uint8_t loiter_ccw   : 1;           // 0 if clockwise, 1 if counter clockwise
     uint8_t terrain_alt  : 1;           // this altitude is above terrain

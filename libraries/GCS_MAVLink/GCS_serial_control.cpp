@@ -33,14 +33,12 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t *msg)
     mavlink_msg_serial_control_decode(msg, &packet);
 
     AP_HAL::UARTDriver *port = nullptr;
-    AP_HAL::Stream *stream = nullptr;
+    AP_HAL::BetterStream *stream = nullptr;
 
     if (packet.flags & SERIAL_CONTROL_FLAG_REPLY) {
         // how did this packet get to us?
         return;
     }
-
-    AP_GPS *gps = get_gps();
 
     bool exclusive = (packet.flags & SERIAL_CONTROL_FLAG_EXCLUSIVE) != 0;
 
@@ -55,17 +53,11 @@ void GCS_MAVLINK::handle_serial_control(const mavlink_message_t *msg)
         break;
     case SERIAL_CONTROL_DEV_GPS1:
         stream = port = hal.uartB;
-        if (gps == nullptr) {
-            return;
-        }
-        gps->lock_port(0, exclusive);
+        AP::gps().lock_port(0, exclusive);
         break;
     case SERIAL_CONTROL_DEV_GPS2:
         stream = port = hal.uartE;
-        if (gps == nullptr) {
-            return;
-        }
-        gps->lock_port(1, exclusive);
+        AP::gps().lock_port(1, exclusive);
         break;
     case SERIAL_CONTROL_DEV_SHELL:
         stream = hal.util->get_shell_stream();

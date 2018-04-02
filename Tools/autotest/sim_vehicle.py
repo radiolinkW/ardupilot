@@ -240,7 +240,8 @@ def kill_tasks():
 
         if under_cygwin():
             return kill_tasks_cygwin(victim_names)
-        if under_macos():
+        if under_macos() and os.environ.get('DISPLAY'):
+            #use special macos kill routine if Display is on
             return kill_tasks_macos()
 
         try:
@@ -350,6 +351,20 @@ def do_build_waf(opts, frame_options):
     os.chdir(old_dir)
 
 
+def do_build_parameters(vehicle):
+    # build succeeded
+    # now build parameters
+    progress("Building fresh parameter descriptions")
+    param_parse_path = os.path.join(
+        find_root_dir(), "Tools/autotest/param_metadata/param_parse.py")
+    cmd_param_build = ["python", param_parse_path, '--vehicle', vehicle]
+
+    _, sts = run_cmd_blocking("Building fresh params", cmd_param_build)
+    if sts != 0:
+        progress("Parameter build failed")
+        sys.exit(1)
+
+
 def do_build(vehicledir, opts, frame_options):
     """Build build target (e.g. sitl) in directory vehicledir"""
 
@@ -450,12 +465,27 @@ def run_in_terminal_window(autotest, name, cmd):
     runme.extend(cmd)
     progress_cmd("Run " + name, runme)
 
-    if under_macos():
+    if under_macos() and os.environ.get('DISPLAY'):
         # on MacOS record the window IDs so we can close them later
         out = subprocess.Popen(runme, stdout=subprocess.PIPE).communicate()[0]
+        out = out.decode('utf-8')
         import re
         p = re.compile('tab 1 of window id (.*)')
-        windowID.append(p.findall(out)[0])
+                        
+        tstart = time.time()
+        while time.time() - tstart < 5:
+            tabs = p.findall(out)
+            
+            if len(tabs) > 0:
+                break
+
+            time.sleep(0.1)
+        #sleep for extra 2 seconds for application to start
+        time.sleep(2)
+        if len(tabs) > 0:
+            windowID.append(tabs[0])
+        else:
+            progress("Cannot find %s process terminal" % name )
     else:
         p = subprocess.Popen(runme)
 
@@ -463,17 +493,18 @@ def run_in_terminal_window(autotest, name, cmd):
 tracker_uarta = None  # blemish
 
 
-def start_antenna_tracker(autotest, opts):
+def start_antenna_tracker(autotest, cmd_opts):
     """Compile and run the AntennaTracker, add tracker to mavproxy"""
+
     global tracker_uarta
     progress("Preparing antenna tracker")
     tracker_home = find_location_by_name(find_autotest_dir(),
-                                         opts.tracker_location)
+                                         cmd_opts.tracker_location)
     vehicledir = os.path.join(autotest, "../../" + "AntennaTracker")
     opts = vinfo.options["AntennaTracker"]
     tracker_default_frame = opts["default_frame"]
     tracker_frame_options = opts["frames"][tracker_default_frame]
-    do_build(vehicledir, opts, tracker_frame_options)
+    do_build(vehicledir, cmd_opts, tracker_frame_options)
     tracker_instance = 1
     oldpwd = os.getcwd()
     os.chdir(vehicledir)
@@ -603,6 +634,11 @@ def start_mavproxy(opts, stuff):
         cmd.append('--console')
     if opts.aircraft is not None:
         cmd.extend(['--aircraft', opts.aircraft])
+
+    if opts.fresh_params:
+        # these were built earlier:
+        path = os.path.join(os.getcwd(), "apm.pdef.xml")
+        cmd.extend(['--load-module', 'param:{"xml-filepath":"%s"}' % path])
 
     if len(extra_cmd):
         cmd.extend(['--cmd', extra_cmd])
@@ -785,6 +821,11 @@ group_sim.add_option("", "--no-mavproxy",
                      action='store_true',
                      default=False,
                      help="Don't launch MAVProxy")
+group_sim.add_option("", "--fresh-params",
+                     action='store_true',
+                     dest='fresh_params',
+                     default=False,
+                     help="Generate and use local parameter help XML")
 parser.add_option_group(group_sim)
 
 
@@ -934,6 +975,9 @@ if cmd_opts.hil:
 else:
     if not cmd_opts.no_rebuild:  # i.e. we should rebuild
         do_build(vehicle_dir, cmd_opts, frame_infos)
+
+    if cmd_opts.fresh_params:
+        do_build_parameters(cmd_opts.vehicle)
 
     if cmd_opts.build_system == "waf":
         if cmd_opts.debug:

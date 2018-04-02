@@ -5,6 +5,7 @@
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <GCS_MAVLink/GCS.h>
 #include <DataFlash/DataFlash.h>
+#include <new>
 
 /*
   parameter defaults for different types of vehicle. The
@@ -578,9 +579,8 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     AP_GROUPEND
 };
 
-NavEKF3::NavEKF3(const AP_AHRS *ahrs, AP_Baro &baro, const RangeFinder &rng) :
+NavEKF3::NavEKF3(const AP_AHRS *ahrs, const RangeFinder &rng) :
     _ahrs(ahrs),
-    _baro(baro),
     _rng(rng),
     gpsNEVelVarAccScale(0.05f),     // Scale factor applied to horizontal velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
     gpsDVelVarAccScale(0.07f),      // Scale factor applied to vertical velocity measurement variance due to manoeuvre acceleration - used when GPS doesn't report speed error
@@ -629,16 +629,15 @@ void NavEKF3::check_log_write(void)
         logging.log_compass = false;
     }
     if (logging.log_gps) {
-        DataFlash_Class::instance()->Log_Write_GPS(_ahrs->get_gps(), _ahrs->get_gps().primary_sensor(), imuSampleTime_us);
+        DataFlash_Class::instance()->Log_Write_GPS(AP::gps(), AP::gps().primary_sensor(), imuSampleTime_us);
         logging.log_gps = false;
     }
     if (logging.log_baro) {
-        DataFlash_Class::instance()->Log_Write_Baro(_baro, imuSampleTime_us);
+        DataFlash_Class::instance()->Log_Write_Baro(imuSampleTime_us);
         logging.log_baro = false;
     }
     if (logging.log_imu) {
-        const AP_InertialSensor &ins = _ahrs->get_ins();
-        DataFlash_Class::instance()->Log_Write_IMUDT(ins, imuSampleTime_us, _logging_mask.get());
+        DataFlash_Class::instance()->Log_Write_IMUDT(imuSampleTime_us, _logging_mask.get());
         logging.log_imu = false;
     }
 
@@ -653,7 +652,7 @@ bool NavEKF3::InitialiseFilter(void)
     if (_enable == 0) {
         return false;
     }
-    const AP_InertialSensor &ins = _ahrs->get_ins();
+    const AP_InertialSensor &ins = AP::ins();
 
     imuSampleTime_us = AP_HAL::micros64();
 
@@ -697,15 +696,18 @@ bool NavEKF3::InitialiseFilter(void)
             _enable.set(0);
             return false;
         }
-        
-        // create the cores
-        core = new NavEKF3_core[num_cores];
-        if (core == nullptr) {
+
+        //try to allocate from CCM RAM, fallback to Normal RAM if not available or full
+        core = (NavEKF3_core*)hal.util->malloc_type(sizeof(NavEKF3_core)*num_cores, AP_HAL::Util::MEM_FAST);
+            if (core == nullptr) {
             _enable.set(0);
             gcs().send_text(MAV_SEVERITY_CRITICAL, "NavEKF3: allocation failed");
             return false;
         }
-
+        for (uint8_t i = 0; i < num_cores; i++) {
+            //Call Constructors
+            new (&core[i]) NavEKF3_core();
+        }
     }
 
     // Set up any cores that have been created
@@ -753,7 +755,7 @@ void NavEKF3::UpdateFilter(void)
 
     imuSampleTime_us = AP_HAL::micros64();
 
-    const AP_InertialSensor &ins = _ahrs->get_ins();
+    const AP_InertialSensor &ins = AP::ins();
 
     bool statePredictEnabled[num_cores];
     for (uint8_t i=0; i<num_cores; i++) {

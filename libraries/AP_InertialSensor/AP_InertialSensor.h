@@ -49,9 +49,7 @@ class AP_InertialSensor : AP_AccelCal_Client
     friend class AP_InertialSensor_Backend;
 
 public:
-    static AP_InertialSensor create() { return AP_InertialSensor{}; }
-
-    constexpr AP_InertialSensor(AP_InertialSensor &&other) = default;
+    AP_InertialSensor();
 
     /* Do not allow copies */
     AP_InertialSensor(const AP_InertialSensor &other) = delete;
@@ -173,7 +171,7 @@ public:
     /* get_delta_time returns the time period in seconds
      * overwhich the sensor data was collected
      */
-    float get_delta_time() const { return _delta_time; }
+    float get_delta_time() const { return MIN(_delta_time, _loop_delta_t_max); }
 
     // return the maximum gyro drift rate in radians/s/s. This
     // depends on what gyro chips are being used
@@ -270,8 +268,8 @@ public:
     void acal_update();
 
     // simple accel calibration
-    uint8_t simple_accel_cal(AP_AHRS &ahrs);
-    
+    MAV_RESULT simple_accel_cal(AP_AHRS &ahrs);
+
     bool accel_cal_requires_reboot() const { return _accel_cal_requires_reboot; }
 
     // return time in microseconds of last update() call
@@ -326,8 +324,8 @@ public:
         uint32_t last_sent_ms;
 
         // all samples are multiplied by this
-        static const uint16_t multiplier_accel = INT16_MAX/radians(2000);
-        static const uint16_t multiplier_gyro = INT16_MAX/(16*GRAVITY_MSS);
+        static const uint16_t multiplier_accel = INT16_MAX/(16*GRAVITY_MSS);
+        static const uint16_t multiplier_gyro = INT16_MAX/radians(2000);
         uint16_t multiplier = multiplier_accel;
 
         // push blocks to DataFlash at regular intervals.  each
@@ -346,8 +344,6 @@ public:
     BatchSampler batchsampler{*this};
 
 private:
-    AP_InertialSensor();
-
     // load backend drivers
     bool _add_backend(AP_InertialSensor_Backend *backend);
     void _start_backends();
@@ -378,6 +374,7 @@ private:
     // the selected sample rate
     uint16_t _sample_rate;
     float _loop_delta_t;
+    float _loop_delta_t_max;
 
     // Most recent accelerometer reading
     Vector3f _accel[INS_MAX_INSTANCES];
@@ -463,6 +460,9 @@ private:
     // control enable of fast sampling
     AP_Int8     _fast_sampling_mask;
 
+    // control enable of detected sensors
+    AP_Int8     _enable_mask;
+    
     // board orientation from AHRS
     enum Rotation _board_orientation;
 
@@ -562,4 +562,8 @@ private:
     uint32_t _gyro_startup_error_count[INS_MAX_INSTANCES];
     bool _startup_error_counts_set;
     uint32_t _startup_ms;
+};
+
+namespace AP {
+    AP_InertialSensor &ins();
 };
