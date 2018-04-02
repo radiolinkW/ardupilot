@@ -76,7 +76,7 @@ void QuadPlane::tailsitter_output(void)
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleLeft, throttle);
             SRV_Channels::set_output_scaled(SRV_Channel::k_throttleRight, throttle);
             SRV_Channels::set_output_scaled(SRV_Channel::k_rudder, 0);
-            pid_accel_z.set_integrator(throttle*10);
+            pos_control->get_accel_z_pid().set_integrator(throttle*10);
         }
         return;
     }
@@ -216,10 +216,9 @@ void QuadPlane::tailsitter_speed_scaling(void)
     } else {
         scaling = constrain_float(hover_throttle / throttle, 1/scaling_max, scaling_max);
     }
-    const SRV_Channel::Aux_servo_function_t functions[3] = {
+    const SRV_Channel::Aux_servo_function_t functions[2] = {
         SRV_Channel::Aux_servo_function_t::k_aileron,
-        SRV_Channel::Aux_servo_function_t::k_elevator,
-        SRV_Channel::Aux_servo_function_t::k_rudder};
+        SRV_Channel::Aux_servo_function_t::k_elevator};
     for (uint8_t i=0; i<ARRAY_SIZE(functions); i++) {
         int32_t v = SRV_Channels::get_output_scaled(functions[i]);
         v *= scaling;

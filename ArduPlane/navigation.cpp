@@ -127,7 +127,9 @@ void Plane::calc_airspeed_errors()
     // Set target to current airspeed + ground speed undershoot,
     // but only when this is faster than the target airspeed commanded
     // above.
-    if (control_mode >= FLY_BY_WIRE_B && (aparm.min_gndspeed_cm > 0)) {
+    if (auto_throttle_mode &&
+    	aparm.min_gndspeed_cm > 0 &&
+    	control_mode != CIRCLE) {
         int32_t min_gnd_target_airspeed = airspeed_measured*100 + groundspeed_undershoot;
         if (min_gnd_target_airspeed > target_airspeed_cm) {
             target_airspeed_cm = min_gnd_target_airspeed;
@@ -135,7 +137,7 @@ void Plane::calc_airspeed_errors()
     }
 
     // Bump up the target airspeed based on throttle nudging
-    if (control_mode >= AUTO && airspeed_nudge_cm > 0) {
+    if (throttle_allows_nudging && airspeed_nudge_cm > 0) {
         target_airspeed_cm += airspeed_nudge_cm;
     }
 
@@ -161,6 +163,8 @@ void Plane::calc_gndspeed_undershoot()
             float gndSpdFwd = yawVect * gndVel;
             groundspeed_undershoot = (aparm.min_gndspeed_cm > 0) ? (aparm.min_gndspeed_cm - gndSpdFwd*100) : 0;
         }
+    } else {
+    	groundspeed_undershoot = 0;
     }
 }
 
@@ -186,8 +190,8 @@ void Plane::update_loiter(uint16_t radius)
             quadplane.guided_start();
         }
     } else if ((loiter.start_time_ms == 0 &&
-                control_mode == AUTO &&
-                !auto_state.no_crosstrack &&
+                (control_mode == AUTO || control_mode == GUIDED) &&
+                auto_state.crosstrack &&
                 get_distance(current_loc, next_WP_loc) > radius*3) ||
                (control_mode == RTL && quadplane.available() && quadplane.rtl_mode == 1)) {
         /*
@@ -288,8 +292,7 @@ void Plane::update_fbwb_speed_height(void)
         target_altitude.last_elevator_input = elevator_input;
     }
     
-    // check for FBWB altitude limit
-    check_minimum_altitude();
+    check_fbwb_minimum_altitude();
 
     altitude_error_cm = calc_altitude_error_cm();
     

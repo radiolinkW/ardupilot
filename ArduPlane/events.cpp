@@ -17,8 +17,8 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     case CRUISE:
     case TRAINING:
         failsafe.saved_mode = control_mode;
-        failsafe.saved_mode_set = 1;
-        if(g.short_fs_action == 2) {
+        failsafe.saved_mode_set = true;
+        if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
             set_mode(FLY_BY_WIRE_A, reason);
         } else {
             set_mode(CIRCLE, reason);
@@ -29,7 +29,7 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     case QLOITER:
     case QHOVER:
         failsafe.saved_mode = control_mode;
-        failsafe.saved_mode_set = 1;
+        failsafe.saved_mode_set = true;
         set_mode(QLAND, reason);
         break;
         
@@ -37,10 +37,10 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, mode_reason_t re
     case AVOID_ADSB:
     case GUIDED:
     case LOITER:
-        if(g.short_fs_action != 0) {
+        if(g.fs_action_short != FS_ACTION_SHORT_BESTGUESS) {
             failsafe.saved_mode = control_mode;
-            failsafe.saved_mode_set = 1;
-            if(g.short_fs_action == 2) {
+            failsafe.saved_mode_set = true;
+            if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
                 set_mode(FLY_BY_WIRE_A, reason);
             } else {
                 set_mode(CIRCLE, reason);
@@ -76,11 +76,11 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     case CRUISE:
     case TRAINING:
     case CIRCLE:
-        if(g.long_fs_action == 3) {
+        if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
 #endif
-        } else if (g.long_fs_action == 2) {
+        } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
             set_mode(FLY_BY_WIRE_A, reason);
         } else {
             set_mode(RTL, reason);
@@ -97,13 +97,13 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, mode_reason_t rea
     case AVOID_ADSB:
     case GUIDED:
     case LOITER:
-        if(g.long_fs_action == 3) {
+        if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if PARACHUTE == ENABLED
             parachute_release();
 #endif
-        } else if (g.long_fs_action == 2) {
+        } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
             set_mode(FLY_BY_WIRE_A, reason);
-        } else if (g.long_fs_action == 1) {
+        } else if (g.fs_action_long == FS_ACTION_LONG_RTL) {
             set_mode(RTL, reason);
         }
         break;
@@ -126,7 +126,7 @@ void Plane::failsafe_short_off_event(mode_reason_t reason)
     // re-read the switch so we can return to our preferred mode
     // --------------------------------------------------------
     if (control_mode == CIRCLE && failsafe.saved_mode_set) {
-        failsafe.saved_mode_set = 0;
+        failsafe.saved_mode_set = false;
         set_mode(failsafe.saved_mode, reason);
     }
 }
@@ -138,19 +138,35 @@ void Plane::failsafe_long_off_event(mode_reason_t reason)
     failsafe.state = FAILSAFE_NONE;
 }
 
-void Plane::low_battery_event(void)
+void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 {
-    if (failsafe.low_battery) {
-        return;
+    switch ((Failsafe_Action)action) {
+        case Failsafe_Action_Land:
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
+                // never stop a landing if we were already committed
+                if (plane.mission.jump_to_landing_sequence()) {
+                    plane.set_mode(AUTO, MODE_REASON_UNKNOWN);
+                    break;
+                 }
+            }
+            FALLTHROUGH;
+        case Failsafe_Action_RTL:
+            if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
+                // never stop a landing if we were already committed
+                set_mode(RTL, MODE_REASON_BATTERY_FAILSAFE);
+                aparm.throttle_cruise.load();
+            }
+            break;
+        case Failsafe_Action_Terminate:
+            char battery_type_str[17];
+            snprintf(battery_type_str, 17, "%s battery", type_str);
+            afs.gcs_terminate(true, battery_type_str);
+            break;
+        case Failsafe_Action_None:
+            // don't actually do anything, however we should still flag the system as having hit a failsafe
+            // and ensure all appropriate flags are going off to the user
+            break;
     }
-    gcs().send_text(MAV_SEVERITY_WARNING, "Low battery %.2fV used %.0f mAh",
-                      (double)battery.voltage(), (double)battery.current_total_mah());
-    if (flight_stage != AP_Vehicle::FixedWing::FLIGHT_LAND) {
-    	set_mode(RTL, MODE_REASON_BATTERY_FAILSAFE);
-    	aparm.throttle_cruise.load();
-    }
-    failsafe.low_battery = true;
-    AP_Notify::flags.failsafe_battery = true;
 }
 
 void Plane::update_events(void)

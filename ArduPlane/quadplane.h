@@ -131,12 +131,6 @@ private:
 
     AP_InertialNav_NavEKF inertial_nav{ahrs};
 
-    AC_P                    p_pos_xy{0.7};
-    AC_P                    p_alt_hold{1};
-    AC_P                    p_vel_z{5};
-    AC_PID                  pid_accel_z{0.3, 1, 0, 800, 10, 0.02};
-    AC_PI_2D                pi_vel_xy{0.7, 0.35, 1000, 5, 0.02};
-
     AP_Int8 frame_class;
     AP_Int8 frame_type;
     
@@ -181,7 +175,7 @@ private:
     void init_throttle_wait();
 
     // use multicopter rate controller
-    void multicopter_attitude_rate_update(float yaw_rate_cds, float smoothing_gain);
+    void multicopter_attitude_rate_update(float yaw_rate_cds);
     
     // main entry points for VTOL flight modes
     void init_stabilize(void);
@@ -305,8 +299,6 @@ private:
 
     // pitch when we enter loiter mode
     int32_t loiter_initial_pitch_cd;
-    
-    const float smoothing_gain = 6;
 
     // true if we have reached the airspeed threshold for transition
     enum {
@@ -466,9 +458,9 @@ private:
     
 public:
     void motor_test_output();
-    uint8_t mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
-                                     uint16_t throttle_value, float timeout_sec,
-                                     uint8_t motor_count);
+    MAV_RESULT mavlink_motor_test_start(mavlink_channel_t chan, uint8_t motor_seq, uint8_t throttle_type,
+                                        uint16_t throttle_value, float timeout_sec,
+                                        uint8_t motor_count);
 private:
     void motor_test_stop();
 };

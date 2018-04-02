@@ -49,7 +49,7 @@ bool Plane::stick_mixing_enabled(void)
         }
     }
 
-    if (failsafe.rc_failsafe && g.short_fs_action == 2) {
+    if (failsafe.rc_failsafe && g.fs_action_short == FS_ACTION_SHORT_FBWA) {
         // don't do stick mixing in FBWA glide mode
         return false;
     }
@@ -696,7 +696,7 @@ void Plane::update_load_factor(void)
     }
        
 
-    float max_load_factor = smoothed_airspeed / aparm.airspeed_min;
+    float max_load_factor = smoothed_airspeed / MAX(aparm.airspeed_min, 1);
     if (max_load_factor <= 1) {
         // our airspeed is below the minimum airspeed. Limit roll to
         // 25 degrees

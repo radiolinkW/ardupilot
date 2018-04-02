@@ -378,7 +378,8 @@ void Plane::set_servos_controlled(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, channel_throttle->get_control_in_zero_dz());
     } else if (quadplane.in_vtol_mode()) {
         // ask quadplane code for forward throttle
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, quadplane.forward_throttle_pct());
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 
+            constrain_int16(quadplane.forward_throttle_pct(), min_throttle, max_throttle));
     }
 
     // suppress throttle when soaring is active
@@ -525,7 +526,7 @@ void Plane::set_servos(void)
     // start with output corked. the cork is released when we run
     // servos_output(), which is run from all code paths in this
     // function
-    hal.rcout->cork();
+    SRV_Channels::cork();
     
     // this is to allow the failsafe module to deliberately crash 
     // the plane. Only used in extreme circumstances to meet the
@@ -580,7 +581,7 @@ void Plane::set_servos(void)
     // setup flap outputs
     set_servos_flaps();
     
-    if (control_mode >= FLY_BY_WIRE_B ||
+    if (auto_throttle_mode ||
         quadplane.in_assisted_flight() ||
         quadplane.in_vtol_mode()) {
         /* only do throttle slew limiting in modes where throttle
@@ -657,7 +658,7 @@ void Plane::set_servos(void)
  */
 void Plane::servos_output(void)
 {
-    hal.rcout->cork();
+    SRV_Channels::cork();
 
     // support twin-engine aircraft
     servos_twin_engine_mix();
@@ -680,7 +681,7 @@ void Plane::servos_output(void)
 
     SRV_Channels::output_ch_all();
     
-    hal.rcout->push();
+    SRV_Channels::push();
 
     if (g2.servo_channels.auto_trim_enabled()) {
         servos_auto_trim();

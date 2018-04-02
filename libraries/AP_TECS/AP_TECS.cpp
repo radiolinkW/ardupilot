@@ -296,7 +296,7 @@ void AP_TECS::update_50hz(void)
           use a complimentary filter to calculate climb_rate. This is
           designed to minimise lag
          */
-        float baro_alt = _ahrs.get_baro().get_altitude();
+        const float baro_alt = AP::baro().get_altitude();
         // Get height acceleration
         float hgt_ddot_mea = -(_ahrs.get_accel_ef().z + GRAVITY_MSS);
         // Perform filter calculation using backwards Euler integration
@@ -325,7 +325,7 @@ void AP_TECS::update_50hz(void)
     // Get DCM
     const Matrix3f &rotMat = _ahrs.get_rotation_body_to_ned();
     // Calculate speed rate of change
-    float temp = rotMat.c.x * GRAVITY_MSS + _ahrs.get_ins().get_accel().x;
+    float temp = rotMat.c.x * GRAVITY_MSS + AP::ins().get_accel().x;
     // take 5 point moving average
     _vel_dot = _vdot_filter.apply(temp);
 
@@ -1076,22 +1076,27 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     _update_pitch();
 
     // log to DataFlash
-    DataFlash_Class::instance()->Log_Write("TECS", "TimeUS,h,dh,hdem,dhdem,spdem,sp,dsp,ith,iph,th,ph,dspdem,w,f", "QfffffffffffffB",
-                                           now,
-                                           (double)_height,
-                                           (double)_climb_rate,
-                                           (double)_hgt_dem_adj,
-                                           (double)_hgt_rate_dem,
-                                           (double)_TAS_dem_adj,
-                                           (double)_TAS_state,
-                                           (double)_vel_dot,
-                                           (double)_integTHR_state,
-                                           (double)_integSEB_state,
-                                           (double)_throttle_dem,
-                                           (double)_pitch_dem,
-                                           (double)_TAS_rate_dem,
-                                           (double)logging.SKE_weighting,
-                                           _flags_byte);
+    DataFlash_Class::instance()->Log_Write(
+        "TECS",
+        "TimeUS,h,dh,hdem,dhdem,spdem,sp,dsp,ith,iph,th,ph,dspdem,w,f",
+        "smnmnnnn----o--",
+        "F0000000----0--",
+        "QfffffffffffffB",
+        now,
+        (double)_height,
+        (double)_climb_rate,
+        (double)_hgt_dem_adj,
+        (double)_hgt_rate_dem,
+        (double)_TAS_dem_adj,
+        (double)_TAS_state,
+        (double)_vel_dot,
+        (double)_integTHR_state,
+        (double)_integSEB_state,
+        (double)_throttle_dem,
+        (double)_pitch_dem,
+        (double)_TAS_rate_dem,
+        (double)logging.SKE_weighting,
+        _flags_byte);
     DataFlash_Class::instance()->Log_Write("TEC2", "TimeUS,KErr,PErr,EDelta,LF", "Qffff",
                                            now,
                                            (double)logging.SKE_error,

@@ -123,27 +123,7 @@ const AP_Param::GroupInfo AP_MotorsHeli_Dual::var_info[] = {
     // @Increment: 0.1
     AP_GROUPINFO("YAW_SCALER", 12, AP_MotorsHeli_Dual, _yaw_scaler, 1.0f),
 
-    // @Param: RSC_PWM_MIN
-    // @DisplayName: RSC PWM output miniumum
-    // @Description: This sets the PWM output on RSC channel for maximum rotor speed
-    // @Range: 0 2000
-    // @User: Standard
-    AP_GROUPINFO("RSC_PWM_MIN", 13, AP_MotorsHeli_Dual, _rotor._pwm_min, 1000),
-
-    // @Param: RSC_PWM_MAX
-    // @DisplayName: RSC PWM output maxiumum
-    // @Description: This sets the PWM output on RSC channel for miniumum rotor speed
-    // @Range: 0 2000
-    // @User: Standard
-    AP_GROUPINFO("RSC_PWM_MAX", 14, AP_MotorsHeli_Dual, _rotor._pwm_max, 2000),
-
-    // @Param: RSC_PWM_REV
-    // @DisplayName: RSC PWM reversal
-    // @Description: This controls reversal of the RSC channel output
-    // @Values: -1:Reversed,1:Normal
-    // @User: Standard
-    AP_GROUPINFO("RSC_PWM_REV", 15, AP_MotorsHeli_Dual, _rotor._pwm_rev, 1),
-
+    // Indices 13-15 were used by RSC_PWM_MIN, RSC_PWM_MAX and RSC_PWM_REV and should not be used
 
     // @Param: COL2_MIN
     // @DisplayName: Collective Pitch Minimum for rear swashplate
@@ -280,11 +260,15 @@ void AP_MotorsHeli_Dual::set_desired_rotor_speed(float desired_speed)
 // calculate_armed_scalars
 void AP_MotorsHeli_Dual::calculate_armed_scalars()
 {
+    float thrcrv[5];
+    for (uint8_t i = 0; i < 5; i++) {
+        thrcrv[i]=_rsc_thrcrv[i]*0.001f;
+    } 
     _rotor.set_ramp_time(_rsc_ramp_time);
     _rotor.set_runup_time(_rsc_runup_time);
-    _rotor.set_critical_speed(_rsc_critical/1000.0f);
-    _rotor.set_idle_output(_rsc_idle_output/1000.0f);
-    _rotor.set_power_output_range(_rsc_power_low/1000.0f, _rsc_power_high/1000.0f, _rsc_power_high/1000.0f, 0);
+    _rotor.set_critical_speed(_rsc_critical*0.001f);
+    _rotor.set_idle_output(_rsc_idle_output*0.001f);
+    _rotor.set_throttle_curve(thrcrv, (uint16_t)_rsc_slewrate.get());
 }
 
 // calculate_scalars
@@ -497,22 +481,22 @@ void AP_MotorsHeli_Dual::move_actuators(float roll_out, float pitch_out, float c
 
 
     // ensure not below landed/landing collective
-    if (_heliflags.landing_collective && collective_out < (_land_collective_min/1000.0f)) {
-        collective_out = _land_collective_min/1000.0f;
+    if (_heliflags.landing_collective && collective_out < (_land_collective_min*0.001f)) {
+        collective_out = _land_collective_min*0.001f;
         limit.throttle_lower = true;
     }
 
     // scale collective pitch for front swashplate (servos 1,2,3)
-    float collective_scaler = ((float)(_collective_max-_collective_min))/1000.0f;
-    float collective_out_scaled = collective_out * collective_scaler + (_collective_min - 1000)/1000.0f;
+    float collective_scaler = ((float)(_collective_max-_collective_min))*0.001f;
+    float collective_out_scaled = collective_out * collective_scaler + (_collective_min - 1000)*0.001f;
 
     // scale collective pitch for rear swashplate (servos 4,5,6)
-    float collective2_scaler = ((float)(_collective2_max-_collective2_min))/1000.0f;
-    float collective2_out_scaled = collective2_out * collective2_scaler + (_collective2_min - 1000)/1000.0f;
+    float collective2_scaler = ((float)(_collective2_max-_collective2_min))*0.001f;
+    float collective2_out_scaled = collective2_out * collective2_scaler + (_collective2_min - 1000)*0.001f;
 
     // feed power estimate into main rotor controller
     // ToDo: add main rotor cyclic power?
-    _rotor.set_motor_load(fabsf(collective_out - _collective_mid_pct));
+    _rotor.set_collective(fabsf(collective_out));
 
     // swashplate servos
     float servo1_out = (_rollFactor[CH_1] * roll_out + _pitchFactor[CH_1] * pitch_out + _yawFactor[CH_1] * yaw_out)*0.45f + _collectiveFactor[CH_1] * collective_out_scaled;
@@ -562,10 +546,10 @@ void AP_MotorsHeli_Dual::servo_test()
         _pitch_test -= (1.0f / (_loop_rate/2));
         _oscillate_angle += 8 * M_PI / _loop_rate;
     } else if (_servo_test_cycle_time >= 5.0f && _servo_test_cycle_time < 6.0f){                              // Raise swash to top
-        _collective_test += (1.0f / _loop_rate);
+        _collective_test = 1.0f;
         _oscillate_angle += 2 * M_PI / _loop_rate;
     } else if (_servo_test_cycle_time >= 11.0f && _servo_test_cycle_time < 12.0f){                            // Lower swash to bottom
-        _collective_test -= (1.0f / _loop_rate);
+        _collective_test = 0.0f;
         _oscillate_angle += 2 * M_PI / _loop_rate;
     } else {                                                                                                  // reset cycle
         _servo_test_cycle_time = 0.0f;
@@ -581,7 +565,7 @@ void AP_MotorsHeli_Dual::servo_test()
 
     // over-ride servo commands to move servos through defined ranges
 
-    _throttle_in = _collective_test;
+    _throttle_filter.reset(_collective_test);
     _roll_in = _roll_test;
     _pitch_in = _pitch_test;
 }
