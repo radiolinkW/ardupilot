@@ -13,6 +13,12 @@ void Copter::arm_motors_check()
 {
     static int16_t arming_counter;
 
+    // check if arming/disarm using rudder is allowed
+    AP_Arming::ArmingRudder arming_rudder = arming.rudder_arming();
+    if (arming_rudder == AP_Arming::ARMING_RUDDER_DISABLED) {
+        return;
+    }
+    
     // ensure throttle is down
     if (channel_throttle->get_control_in() > 0) {
         arming_counter = 0;
@@ -44,9 +50,9 @@ void Copter::arm_motors_check()
             auto_disarm_begin = millis();
         }
 
-    // full left
-    }else if (tmp < -4000) {
-        if (!mode_has_manual_throttle(control_mode) && !ap.land_complete) {
+    // full left and rudder disarming is enabled
+    } else if ((tmp < -4000) && (arming_rudder == AP_Arming::ARMING_RUDDER_ARMDISARM)) {
+    	if (!mode_has_manual_throttle(control_mode) && !ap.land_complete) {
             arming_counter = 0;
             return;
         }
