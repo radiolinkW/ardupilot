@@ -71,6 +71,9 @@ void AP_BoardConfig::px4_setup_pwm()
 #if CONFIG_HAL_BOARD == HAL_BOARD_VRBRAIN
         { 8, PWM_SERVO_MODE_12PWM, 0 },
 #endif
+#if defined(CONFIG_ARCH_BOARD_PX4FMU_V4)
+		{ 8, PWM_SERVO_MODE_8PWM, 0 },
+#endif
     };
     uint8_t mode_parm = (uint8_t)px4.pwm_count.get();
     uint8_t i;
