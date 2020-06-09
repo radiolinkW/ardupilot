@@ -51,82 +51,51 @@ bool AP_FlashStorage::init(void)
     memset(mem_buffer, 0, storage_size);
 
     // find state of sectors
-    struct sector_header header[2];
+    struct sector_header header;
 
     // read headers and possibly initialise if bad signature
-    for (uint8_t i=0; i<2; i++) {
-        if (!flash_read(i, 0, (uint8_t *)&header[i], sizeof(header[i]))) {
-            return false;
-        }
-        bool bad_header = (header[i].signature != signature);
-        enum SectorState state = (enum SectorState)header[i].state;
-        if (state != SECTOR_STATE_AVAILABLE &&
-            state != SECTOR_STATE_IN_USE &&
-            state != SECTOR_STATE_FULL) {
-            bad_header = true;
-        }
+	if (!flash_read(0, 0, (uint8_t *)&header, sizeof(header))) {
+		return false;
+	}
+	bool bad_header = (header.signature != signature);
+	enum SectorState state = (enum SectorState)header.state;
+	if (state != SECTOR_STATE_AVAILABLE &&
+		state != SECTOR_STATE_IN_USE &&
+		state != SECTOR_STATE_FULL) {
+		bad_header = true;
+	}
 
-        // initialise if bad header
-        if (bad_header) {
-            return erase_all();
-        }
-    }
+	// initialise if bad header
+	if (bad_header) {
+		return erase_all();
+	}
 
-    // work out the first sector to read from using sector states
-    enum SectorState states[2] {(enum SectorState)header[0].state, (enum SectorState)header[1].state};
-    uint8_t first_sector;
-
-    if (states[0] == states[1]) {
-        if (states[0] != SECTOR_STATE_AVAILABLE) {
-            return erase_all();
-        }
-        first_sector = 0;
-    } else if (states[0] == SECTOR_STATE_FULL) {
-        first_sector = 0;
-    } else if (states[1] == SECTOR_STATE_FULL) {
-        first_sector = 1;
-    } else if (states[0] == SECTOR_STATE_IN_USE) {
-        first_sector = 0;
-    } else if (states[1] == SECTOR_STATE_IN_USE) {
-        first_sector = 1;
-    } else {
-        // doesn't matter which is first
-        first_sector = 0;
-    }
-
-    // load data from any current sectors
-    for (uint8_t i=0; i<2; i++) {
-        uint8_t sector = (first_sector + i) & 1;
-        if (states[sector] == SECTOR_STATE_IN_USE ||
-            states[sector] == SECTOR_STATE_FULL) {
-            if (!load_sector(sector)) {
-                return erase_all();
-            }
-        }
-    }
+	if (state == SECTOR_STATE_IN_USE ||
+		state == SECTOR_STATE_FULL) {
+		if (!load_sector(0)) {
+			return erase_all();
+		}
+	}
 
     // clear any write error
     write_error = false;
     reserved_space = 0;
     
     // if the first sector is full then write out all data so we can erase it
-    if (states[first_sector] == SECTOR_STATE_FULL) {
-        current_sector = first_sector ^ 1;
+    if (state == SECTOR_STATE_FULL) {
         if (!write_all()) {
             return erase_all();
         }
     }
 
     // erase any sectors marked full
-    for (uint8_t i=0; i<2; i++) {
-        if (states[i] == SECTOR_STATE_FULL) {
-            if (!erase_sector(i, true)) {
-                return false;
-            }
-        }
-    }
+	if (state == SECTOR_STATE_FULL) {
+		if (!erase_sector(0,false)) {
+			return false;
+		}
+	}
 
-    reserved_space = 0;
+	current_sector=0;
     
     // ready to use
     return true;
@@ -170,14 +139,13 @@ bool AP_FlashStorage::write(uint16_t offset, uint16_t length)
         }
 
         if (write_offset > flash_sector_size - (sizeof(struct block_header) + max_write + reserved_space)) {
-            if (!switch_sectors()) {
-                if (!flash_erase_ok()) {
-                    return false;
-                }
-                if (!switch_full_sector()) {
-                    return false;                    
-                }
-            }
+        	if (!erase_the_sector()) {
+				return false;
+        	}
+        	if (!write_all()){
+        		return false;
+        	}
+        	return true;
         }
         
         struct block_header header;
@@ -300,10 +268,7 @@ bool AP_FlashStorage::erase_all(void)
     current_sector = 0;
     write_offset = sizeof(struct sector_header);
     
-    if (!erase_sector(0, current_sector!=0)) {
-        return false;
-    }
-    if (!erase_sector(1, current_sector!=1)) {
+    if (!erase_sector(0,true)) {
         return false;
     }
     
@@ -412,4 +377,24 @@ bool AP_FlashStorage::re_initialise(void)
         return false;        
     }
     return write_all();
+}
+/*
+  erase the only sector
+ */
+bool AP_FlashStorage::erase_the_sector(void)
+{
+    write_error = false;
+
+    current_sector = 0;
+    write_offset = sizeof(struct sector_header);
+
+    if (!erase_sector(0,true)) {
+        return false;
+    }
+
+    // mark current sector as in-use
+    struct sector_header header;
+    header.signature = signature;
+    header.state = SECTOR_STATE_IN_USE;
+    return flash_write(current_sector, 0, (const uint8_t *)&header, sizeof(header));
 }

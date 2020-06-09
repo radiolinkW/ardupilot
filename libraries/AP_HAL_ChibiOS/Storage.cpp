@@ -284,6 +284,8 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
 bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
 {
     size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
+    //begin to read data from last 28k flash
+    //base_address = base_address +1024*100;
     const uint8_t *b = ((const uint8_t *)base_address)+offset;
     memcpy(data, b, length);
     return true;

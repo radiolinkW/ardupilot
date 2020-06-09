@@ -17,6 +17,8 @@ STM32_ST_USE_TIMER 5
 
 FLASH_SIZE_KB 1024
 
+FLASH_RESERVE_START_KB 32
+
 # board voltage
 STM32_VDD 330U
 
@@ -137,7 +139,7 @@ define HAL_STORAGE_SIZE        16384
 define HAL_WITH_RAMTRON 1
 
 # fallback to flash is no FRAM fitted
-define STORAGE_FLASH_PAGE 22
+define STORAGE_FLASH_PAGE 1
 
 # enable FAT filesystem
 define HAL_OS_FATFS_IO 1

@@ -165,6 +165,9 @@ private:
     // erase all sectors and reset
     bool erase_all();
 
+    //erase the only sector
+    bool erase_the_sector(void);
+
     // write all of mem_buffer to current sector
     bool write_all();
 
