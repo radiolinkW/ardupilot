@@ -1,0 +1,7 @@
+# SD card logging
+LOG_BACKEND_TYPE 1
+
+# The three board control outputs use active-low transistor stages.
+RELAY2_INVERTED 1
+RELAY3_INVERTED 1
+RELAY4_INVERTED 1
